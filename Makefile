@@ -20,6 +20,6 @@ bench:
 	$(PY) -m eval.bench --label $(LABEL) --clips "$(CLIPS)" --usd-per-hour $(USD_PER_HOUR)
 deploy:
 	aws cloudformation deploy --stack-name $(STACK) --template-file infra/holdsight.yaml \
-	  --capabilities CAPABILITY_IAM --region $(REGION) --parameter-overrides CoolAmiId=$(COOL_AMI)
+	  --capabilities CAPABILITY_IAM --region $(REGION) --parameter-overrides CoolAmiId=$(COOL_AMI) CodeBucket=$(CODE_BUCKET)
 destroy:
 	aws cloudformation delete-stack --stack-name $(STACK) --region $(REGION)
