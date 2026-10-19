@@ -1,0 +1,13 @@
+.venv*/
+__pycache__/
+*.pyc
+models/*.onnx
+results/*
+!results/.gitkeep
+config/data.yaml
+data/
+*.mp4
+*.mov
+*.avi
+.env
+.pytest_cache/
