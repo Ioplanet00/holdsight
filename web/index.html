@@ -14,20 +14,22 @@ button,input{font-size:1rem;padding:.5rem}.note{color:#555;font-size:.9rem}
 <label><input type="checkbox" id="consent"> I am the person in this video, or I have their consent.</label><br><br>
 <input type="file" id="f" accept="video/*"> <button id="go">Analyze</button>
 <div id="out" aria-live="polite"></div>
+<details id="bi"><summary>OpenCV build on this server</summary><pre id="bip">loading…</pre></details>
 <script>
+fetch('v1/build').then(r=>r.json()).then(b=>{document.getElementById('bip').textContent=`OpenCV ${b.opencv} (${b.machine}, ${b.threads} threads)\n${b.module}\n\n`+b.build.join('\n');});
 const why={};fetch('v1/contract').then(r=>r.json()).then(c=>Object.assign(why,c.codes));
 document.getElementById('go').onclick=async()=>{
   const out=document.getElementById('out');
   if(!document.getElementById('consent').checked){out.textContent='Please confirm consent first.';return;}
   const file=document.getElementById('f').files[0]; if(!file){out.textContent='Choose a clip.';return;}
   out.textContent='Analyzing…'; const fd=new FormData(); fd.append('file',file);
-  const r=await (await fetch('v1/analyze',{method:'POST',body:fd})).json();
+  const t0=performance.now();const resp=await fetch('v1/analyze',{method:'POST',body:fd});if(!resp.ok){out.textContent='Error '+resp.status+': '+((await resp.json().catch(()=>({}))).detail||'');return;}const r=await resp.json();const rt=performance.now()-t0;
   const step=Math.max(1,Math.ceil(r.timeline.length/300));
   const cells=r.timeline.filter((_,i)=>i%step==0).map(c=>`<span class="${c||'ok'}" title="${c||'measured'}"></span>`).join('');
   const s=r.session; const used=[...new Set(r.timeline.filter(Boolean))];
   out.innerHTML=`<div class="tl">${cells}</div><p class="note">Green = measured. Coloured = held.</p>`+
    (s.hold?`<h2>Session held: ${s.hold}</h2><p>${s.why}</p>`:
-   `<h2>Measured</h2><ul><li>Blinks: ${s.value.blink_count}</li><li>Blink rate: ${s.value.blink_rate_per_min?.toFixed(1)} /min</li><li>PERCLOS: ${(s.value.perclos*100).toFixed(1)}%</li><li>Longest closure: ${s.value.longest_closure_s.toFixed(2)} s</li></ul>`)+
-   (used.length?`<h3>Why some parts were held</h3><ul>${used.map(c=>`<li><b>${c}</b>: ${why[c]||''}</li>`).join('')}</ul>`:'');
+   `<h2>Measured</h2><p class="note">One eye engine and one quality gate, two views of the same raw measurements. Research screening signals only: no scores, no diagnosis.</p><div style="display:flex;gap:2em;flex-wrap:wrap"><div><h3>Driver alertness signals</h3><ul><li>PERCLOS: ${(s.value.perclos*100).toFixed(1)}%</li><li>Longest closure: ${s.value.longest_closure_s.toFixed(2)} s</li></ul></div><div><h3>Cognitive screening signals</h3><ul><li>Blink rate: ${s.value.blink_rate_per_min?.toFixed(1)} /min</li><li>Blinks: ${s.value.blink_count}</li></ul></div></div>`)+
+   (r.perf?`<p class="note">Server processing: ${r.perf.total_ms} ms for ${r.perf.frames} frames (${r.perf.ms_per_frame} ms/frame, OpenCV ${r.perf.opencv}). Round trip incl. upload: ${rt.toFixed(0)} ms.</p>`:'')+(used.length?`<h3>Why some parts were held</h3><ul>${used.map(c=>`<li><b>${c}</b>: ${why[c]||''}</li>`).join('')}</ul>`:'');
 };
 </script></body></html>
