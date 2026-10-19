@@ -1,0 +1,3 @@
+# On the COOL AMI: use the AMI's preinstalled OpenCV (COOL). Do NOT pip-install opencv here.
+# Install everything in requirements.lock except opencv-python-headless:
+#   grep -v '^opencv-python-headless' requirements.lock > /tmp/req-cool.txt && pip install -r /tmp/req-cool.txt

@@ -1,0 +1,88 @@
+# DRAFT CloudFormation - not deployed. Review before use. Account owner sets the budget cap separately.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: HoldSight - OpenCV 5 (COOL) on EC2 Graviton4 behind CloudFront, CloudWatch, private results bucket.
+Parameters:
+  CoolAmiId:
+    Type: AWS::EC2::Image::Id
+    Description: COOL (Cloud Optimized OpenCV for AWS Graviton4) AMI ID from your Marketplace subscription
+  InstanceType:
+    Type: String
+    Default: m8g.4xlarge
+    AllowedValues: [c8g.xlarge, c8g.2xlarge, m8g.xlarge, m8g.2xlarge, m8g.4xlarge]
+  RepoUrl:
+    Type: String
+    Default: https://github.com/OWNER/holdsight.git
+Resources:
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration: {BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true}
+      BucketEncryption: {ServerSideEncryptionConfiguration: [{ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}}]}
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement: [{Effect: Allow, Principal: {Service: ec2.amazonaws.com}, Action: sts:AssumeRole}]
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore]
+      Policies:
+        - PolicyName: least-privilege
+          PolicyDocument:
+            Statement:
+              - {Effect: Allow, Action: [cloudwatch:PutMetricData, logs:CreateLogStream, logs:PutLogEvents, logs:CreateLogGroup], Resource: "*"}
+              - {Effect: Allow, Action: [s3:PutObject], Resource: !Sub "${ResultsBucket.Arn}/results/*"}
+  Profile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: {Roles: [!Ref Role]}
+  Sg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: HoldSight - port 8000 from CloudFront origin-facing prefix list only
+      SecurityGroupIngress:
+        - {IpProtocol: tcp, FromPort: 8000, ToPort: 8000, SourcePrefixListId: pl-REPLACE-cloudfront-origin-facing}
+  Host:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref CoolAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref Profile
+      SecurityGroupIds: [!GetAtt Sg.GroupId]
+      MetadataOptions: {HttpTokens: required}
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          cd /opt && git clone ${RepoUrl} holdsight && cd holdsight
+          grep -v '^opencv-python-headless' requirements.lock > /tmp/req.txt
+          python3 -m venv --system-site-packages .venv && .venv/bin/pip install -r /tmp/req.txt
+          bash scripts/fetch_models.sh
+          .venv/bin/python scripts/cool_evidence.py --label cool --cool-version "see-marketplace"
+          nohup .venv/bin/python -m uvicorn holdsight.api:app --host 0.0.0.0 --port 8000 &
+  Cdn:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - Id: api
+            DomainName: !GetAtt Host.PublicDnsName
+            CustomOriginConfig: {HTTPPort: 8000, OriginProtocolPolicy: http-only}
+        DefaultCacheBehavior:
+          TargetOriginId: api
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad   # Managed-CachingDisabled
+          OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # Managed-AllViewerExceptHostHeader
+  CpuAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions: [{Name: InstanceId, Value: !Ref Host}]
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      Threshold: 85
+      ComparisonOperator: GreaterThanThreshold
+Outputs:
+  Url: {Value: !Sub "https://${Cdn.DomainName}/"}
+  Bucket: {Value: !Ref ResultsBucket}
