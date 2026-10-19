@@ -1,0 +1,3 @@
+# Copy to config/data.yaml (git-ignored). No data is stored in this repository.
+eyeblink8_root: /path/to/eyeblink8   # download yourself from https://www.blinkingmatters.com/research
+own_recordings_root: /path/to/consented_recordings   # team members with signed consent only

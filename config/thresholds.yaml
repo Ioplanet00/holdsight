@@ -1,0 +1,22 @@
+# All gate thresholds. DRAFT values: to be set on the team's own consented recordings and
+# frozen (git tag thresholds-frozen) BEFORE any Eyeblink8 evaluation. Nothing is tuned on Eyeblink8.
+face_score_min: 0.80
+eye_box_scale: 0.45
+eye_resize: 64
+clahe_clip: 2.0
+clahe_tile: 4
+adapt_block: 15
+adapt_c: 5.0
+min_eye_contour_area: 20.0
+glare_level: 250
+glare_ratio_max: 0.08
+low_light_mean_min: 40.0
+motion_max_iod: 0.25
+blur_var_min: 15.0
+closed_ratio: 0.45
+open_ratio: 0.60
+blink_min_frames: 2
+blink_max_s: 0.5
+min_fps: 15.0
+min_usable_share: 0.60
+min_duration_s: 10.0
