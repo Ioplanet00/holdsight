@@ -33,7 +33,7 @@ Users: fleet safety teams and driver-monitoring developers. Out of scope: diagno
 Context: at FunnyTech21, one eye-signal engine does both cognitive-decline screening and driver-impairment detection. HoldSight is a separate, open demo build of that engine's measurement-honesty layer, and it contains none of the engine's code or weights.
 
 ## 2. Architecture and data flow
-See `docs/architecture.png`. Browser → Amazon CloudFront (HTTPS) → FastAPI on EC2 Graviton4 (m8g) launched from the COOL AMI → OpenCV pipeline (COOL build, OpenCV 4.14; the same code runs on pip OpenCV 5) → JSON + result page. Uploaded bytes are written only to a temporary file in tmpfs for the request and deleted in a `finally` block. CloudWatch receives metrics and logs without media. Evaluation scripts write JSON (no video) to `results/` and, on AWS, to a private S3 bucket.
+See `docs/architecture.svg`. Browser → Amazon CloudFront (HTTPS) → FastAPI on EC2 Graviton4 (m8g) launched from the COOL AMI → OpenCV pipeline (COOL build, OpenCV 4.14; the same code runs on pip OpenCV 5) → JSON + result page. Uploaded bytes are written only to a temporary file in tmpfs for the request and deleted in a `finally` block. CloudWatch receives metrics and logs without media. Evaluation scripts write JSON (no video) to `results/` and, on AWS, to a private S3 bucket.
 
 ## 3. OpenCV 5 implementation
 3.1 Decode — `cv.VideoCapture` on a background thread with a 16-frame queue; timestamps from `CAP_PROP_POS_MSEC` give the delivered fps (`holdsight/decode.py`).

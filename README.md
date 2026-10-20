@@ -9,7 +9,7 @@ Built by FunnyTech21 (Incheon, South Korea) for the OpenCV AI Competition 2026, 
 
 **Core idea:** at FunnyTech21, one eye-signal engine does both cognitive-decline screening and driver-impairment detection. HoldSight is a separate, open demo build of the measurement-honesty layer of that engine. It does not contain the engine itself.
 
-![Architecture](docs/architecture.png)
+![Architecture](docs/architecture.svg)
 
 ---
 
@@ -21,7 +21,7 @@ Built by FunnyTech21 (Incheon, South Korea) for the OpenCV AI Competition 2026, 
 | Innovation (20%) | Value-or-hold output contract with 7 reason codes; **hold correctness** is itself evaluated (`eval/degrade.py`) — report §1, §5.2 |
 | Real-world impact (20%) | Driver fatigue/distraction and the EU driver-distraction warning mandate; vision and market sections below; report §1, §9, §10 |
 | User experience (10%) | `web/index.html`: one page, consent check, timeline with held segments coloured by reason, plain-English explanations |
-| Documentation & presentation (10%) | This README, [docs/TECH_REPORT.md](docs/TECH_REPORT.md), [docs/architecture.png](docs/architecture.png), demo video (link on Devpost) |
+| Documentation & presentation (10%) | This README, [docs/TECH_REPORT.md](docs/TECH_REPORT.md), [docs/architecture.svg](docs/architecture.svg), demo video (link on Devpost) |
 | Cloud delivery, reproducibility, responsible operation (10%) | `infra/holdsight.yaml` (CloudFormation), `requirements.lock`, `make` targets, CloudWatch and Route 53 health alarms with SNS email (`infra/health-alarm.yaml`), video deleted after processing, least-privilege IAM, `scripts/cool_evidence.py` |
 | Best Use of COOL (special award) | Same pipeline on the same Graviton4 instance: COOL vs `opencv-python-headless==5.0.0.93` — `eval/bench_matrix.py` (threads x streams x scale), `eval/bench_e2e.py`, `scripts/cool_evidence.py`; results above |
 

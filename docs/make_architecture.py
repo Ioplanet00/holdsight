@@ -1,5 +1,5 @@
-"""Regenerate docs/architecture.png:  python docs/make_architecture.py"""
-import matplotlib; matplotlib.use('Agg')
+"""Regenerate docs/architecture.svg and docs/architecture.png:  python docs/make_architecture.py"""
+import matplotlib; matplotlib.use('Agg'); matplotlib.rcParams['svg.fonttype'] = 'none'
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 fig, ax = plt.subplots(figsize=(15, 8.2), dpi=150); ax.set_xlim(0, 150); ax.set_ylim(0, 82); ax.axis('off')
@@ -40,3 +40,4 @@ arr(56, 46, 60, 20, ls='--', c='#777'); arr(58, 46, 84, 20, ls='--', c='#777'); 
 box(1, 8, 40, 15, 'COOL vs pip OpenCV 5.0, m8g.xlarge,\nsame code and inputs:\ndetector stage: COOL ~21% faster\nend to end: COOL ~10% slower\nbuild info saved as evidence', '#f0f0f0', fs=8.2)
 ax.text(75, 2, 'Screening signals only — not a diagnosis, not a medical device, not vehicle control.', ha='center', fontsize=9, style='italic', color='#444')
 plt.savefig('docs/architecture.png', bbox_inches='tight', facecolor='white')
+plt.savefig('docs/architecture.svg', bbox_inches='tight', facecolor='white')
