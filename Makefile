@@ -1,6 +1,6 @@
 PY ?= .venv/bin/python
 PIP ?= .venv/bin/pip
-.PHONY: setup models test demo evidence eval degrade bench deploy destroy
+.PHONY: setup models test demo evidence eval degrade bench deploy health-alarm destroy
 
 setup:
 	python3 -m venv .venv && $(PIP) install -r requirements.lock
@@ -20,6 +20,11 @@ bench:
 	$(PY) -m eval.bench --label $(LABEL) --clips "$(CLIPS)" --usd-per-hour $(USD_PER_HOUR)
 deploy:
 	aws cloudformation deploy --stack-name $(STACK) --template-file infra/holdsight.yaml \
-	  --capabilities CAPABILITY_IAM --region $(REGION) --parameter-overrides CoolAmiId=$(COOL_AMI) CodeBucket=$(CODE_BUCKET)
+	  --capabilities CAPABILITY_IAM --region $(REGION) --parameter-overrides CoolAmiId=$(COOL_AMI) CodeBucket=$(CODE_BUCKET) AlarmEmail=$(ALARM_EMAIL)
+health-alarm:
+	aws cloudformation deploy --stack-name $(STACK)-health --template-file infra/health-alarm.yaml --region us-east-1 \
+	  --parameter-overrides HealthCheckId=$$(aws cloudformation describe-stacks --stack-name $(STACK) --region $(REGION) \
+	  --query "Stacks[0].Outputs[?OutputKey=='HealthCheckId'].OutputValue" --output text) AlarmEmail=$(ALARM_EMAIL)
 destroy:
+	aws cloudformation delete-stack --stack-name $(STACK)-health --region us-east-1
 	aws cloudformation delete-stack --stack-name $(STACK) --region $(REGION)

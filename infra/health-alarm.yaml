@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: HoldSight demo - email alarm when the public endpoint health check fails (deploy in us-east-1, where Route 53 health check metrics live)
+Parameters:
+  HealthCheckId: {Type: String, Description: HealthCheckId output of the main stack}
+  AlarmEmail: {Type: String}
+Resources:
+  Topic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: HoldSight endpoint health
+      Tags: [{Key: Project, Value: holdsight}]
+  Sub:
+    Type: AWS::SNS::Subscription
+    Properties: {TopicArn: !Ref Topic, Protocol: email, Endpoint: !Ref AlarmEmail}
+  EndpointDown:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: HoldSight /v1/health failing from Route 53 checkers
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Dimensions: [{Name: HealthCheckId, Value: !Ref HealthCheckId}]
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref Topic]
+      OKActions: [!Ref Topic]
+Outputs:
+  TopicArn: {Value: !Ref Topic}

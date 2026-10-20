@@ -6,7 +6,19 @@ Parameters:
   CodeBucket: {Type: String, Description: Private S3 bucket holding the source tarball}
   CodeKey: {Type: String, Default: src/holdsight-src.tgz}
   CfPrefixList: {Type: String, Default: pl-22a6434b}
+  AlarmEmail: {Type: String, Default: "", Description: Optional address for alarm notifications (must confirm the SNS subscription)}
+Conditions:
+  HasEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
 Resources:
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: HoldSight demo alarms
+      Tags: [{Key: Project, Value: holdsight}]
+  AlarmSub:
+    Type: AWS::SNS::Subscription
+    Condition: HasEmail
+    Properties: {TopicArn: !Ref AlarmTopic, Protocol: email, Endpoint: !Ref AlarmEmail}
   Role:
     Type: AWS::IAM::Role
     Properties:
@@ -113,7 +125,8 @@ Resources:
       EvaluationPeriods: 2
       Threshold: 0
       ComparisonOperator: GreaterThanThreshold
-      AlarmActions: [!Sub "arn:aws:automate:${AWS::Region}:ec2:recover"]
+      AlarmActions: [!Sub "arn:aws:automate:${AWS::Region}:ec2:recover", !Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
   RebootAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -126,7 +139,8 @@ Resources:
       EvaluationPeriods: 3
       Threshold: 0
       ComparisonOperator: GreaterThanThreshold
-      AlarmActions: [!Sub "arn:aws:automate:${AWS::Region}:ec2:reboot"]
+      AlarmActions: [!Sub "arn:aws:automate:${AWS::Region}:ec2:reboot", !Ref AlarmTopic]
+      OKActions: [!Ref AlarmTopic]
   HealthCheck:
     Type: AWS::Route53::HealthCheck
     Properties:
@@ -149,7 +163,9 @@ Resources:
       EvaluationPeriods: 3
       Threshold: 85
       ComparisonOperator: GreaterThanThreshold
+      AlarmActions: [!Ref AlarmTopic]
 Outputs:
   Url: {Value: !Sub "https://${Cdn.DomainName}/"}
   InstanceId: {Value: !Ref Host}
   HealthCheckId: {Value: !Ref HealthCheck}
+  AlarmTopicArn: {Value: !Ref AlarmTopic}
