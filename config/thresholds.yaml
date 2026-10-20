@@ -1,5 +1,6 @@
-# All gate thresholds. DRAFT values: to be set on the team's own consented recordings and
-# frozen (git tag thresholds-frozen) BEFORE any Eyeblink8 evaluation. Nothing is tuned on Eyeblink8.
+# Gate thresholds were set on the team's own consented recording. Blink parameters were chosen on
+# Eyeblink8 videos 1-2 and checked on 3-4 (dev split). The file is then frozen: its sha256 is stored
+# in config/thresholds.frozen and the test split (Eyeblink8 8-11, talkingFace) refuses to run if it changes.
 face_score_min: 0.80
 eye_box_scale: 0.45
 eye_resize: 64
@@ -10,13 +11,19 @@ adapt_c: 5.0
 min_eye_contour_area: 20.0
 glare_level: 250
 glare_ratio_max: 0.08
+glare_blob_max: 0.012
 low_light_mean_min: 40.0
+low_light_face_mean_min: 40.0
+occlusion_texture_min: 8.0
+occlusion_flat_max: 0.50
 motion_max_iod: 0.25
 blur_var_min: 15.0
-closed_ratio: 0.45
-open_ratio: 0.60
-blink_min_frames: 2
+blink_window_s: 2.0
+blink_z: 3.5
+blink_min_frames: 1
 blink_max_s: 0.5
+blink_refractory_s: 0.33
+closure_max_s: 3.0
 min_fps: 15.0
 min_usable_share: 0.60
 min_duration_s: 10.0
