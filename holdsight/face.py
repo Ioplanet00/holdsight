@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
+import os
 import cv2 as cv
 import numpy as np
 
@@ -31,8 +32,23 @@ class FaceFinder:
             raise FileNotFoundError(f"{model} missing - run `make models`")
         self.det = cv.FaceDetectorYN.create(str(model), "", (320, 320), score_min, 0.3, 5000)
         self.size = None
+        # frames wider than this are downscaled for detection only; landmarks are mapped back
+        self.max_w = int(os.environ.get("HOLDSIGHT_DETECT_MAX_W", 720))
 
     def find(self, bgr: np.ndarray) -> Face | None:
+        k = 1.0
+        if self.max_w and bgr.shape[1] > self.max_w:
+            k = bgr.shape[1] / self.max_w
+            bgr = cv.resize(bgr, (self.max_w, int(round(bgr.shape[0] / k))), interpolation=cv.INTER_AREA)
+        face = self._find(bgr)
+        if face is None or k == 1.0:
+            return face
+        x, y, w, h = face.box
+        return Face(box=(x * k, y * k, w * k, h * k), score=face.score,
+                    right_eye=(face.right_eye[0] * k, face.right_eye[1] * k),
+                    left_eye=(face.left_eye[0] * k, face.left_eye[1] * k))
+
+    def _find(self, bgr: np.ndarray) -> Face | None:
         h, w = bgr.shape[:2]
         if self.size != (w, h):
             self.det.setInputSize((w, h))
